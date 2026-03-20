@@ -1,0 +1,115 @@
+.fingerprint-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  animation: fadeIn 0.5s var(--ease-out) both;
+  width: 100%;
+}
+
+/* Rings graphic */
+.fp-graphic-wrap {
+  position: relative;
+  width: 160px; height: 160px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.fp-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(34, 211, 238, 0.2);
+}
+
+.fp-ring-outer {
+  inset: 0;
+  animation: ripple 2.2s ease-out infinite;
+}
+
+.fp-ring-inner {
+  inset: 16px;
+  animation: ripple 2.2s ease-out infinite 0.55s;
+}
+
+.fp-icon-wrap {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-accent);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.fp-icon {
+  color: var(--accent-primary);
+  animation: pulse 2s infinite;
+}
+
+/* Dots loader */
+.waiting-loader {
+  display: flex; gap: 6px; align-items: center;
+}
+
+.waiting-loader span {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: pulse 1.4s infinite;
+}
+
+.waiting-loader span:nth-child(2) { animation-delay: 0.2s; }
+.waiting-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+.waiting-status {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Progress bar */
+.fp-progress-wrap {
+  width: 100%;
+  max-width: 300px;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.fp-progress-bar {
+  height: 100%;
+  background: var(--accent-gradient);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.fp-timer {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fp-timer strong { color: var(--accent-primary); }
+.expiring { color: var(--warning); }
+
+/* Session ID */
+.session-id-row {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.session-id-row code {
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+}
+
+/* Poll error */
+.fp-poll-error {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0.4rem 0.75rem;
+  background: var(--warning-bg);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--warning);
+}

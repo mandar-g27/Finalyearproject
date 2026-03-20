@@ -4,7 +4,6 @@ import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from face_module import verify_face_from_image_bytes
-from voice_module import verify_voice_from_audio_bytes
 
 app = Flask(__name__)
 CORS(app)
@@ -14,8 +13,8 @@ SESSION_TIMEOUT = 60  # seconds
 SESSION_STORE = {}
 
 FINGERPRINT_DB = {
-    1: "Gouresh",
-    2: "Ashlesh",
+    1: "Ashlesh",
+    2: "Gouresh",
     3: "Mandar"
 }
 
@@ -33,41 +32,60 @@ def cleanup_sessions():
 
 threading.Thread(target=cleanup_sessions, daemon=True).start()
 
-# ---------------- START AUTH ----------------
-@app.route("/start-auth", methods=["POST"])
-def start_auth():
+# ---------------- STEP 1: VERIFY FACE ----------------
+@app.route("/verify-face", methods=["POST"])
+def verify_face():
     data = request.get_json()
-
     face_b64 = data.get("face_image")
-    voice_b64 = data.get("voice_audio")
 
-    if not face_b64 or not voice_b64:
-        return jsonify({"status": "error"}), 400
+    if not face_b64:
+        return jsonify({"status": "error", "reason": "No face image provided"}), 400
 
     if "," in face_b64:
         face_b64 = face_b64.split(",")[1]
 
     face_bytes = base64.b64decode(face_b64)
-    voice_bytes = base64.b64decode(voice_b64)
-
     face_name, face_ok = verify_face_from_image_bytes(face_bytes)
-    voice_name, voice_ok = verify_voice_from_audio_bytes(voice_bytes)
 
-    if not face_ok or not voice_ok or face_name != voice_name:
-        return jsonify({"status": "denied"}), 403
+    if not face_ok:
+        return jsonify({"status": "face_failed", "reason": "Face could not be identified"}), 200
 
+    # Create session — waiting for voice now
     session_id = str(time.time())
-
     SESSION_STORE[session_id] = {
         "identity": face_name,
-        "status": "waiting_fp",
+        "status": "waiting_voice",
         "created_at": time.time()
     }
 
     return jsonify({
-        "status": "face_voice_ok",
-        "session_id": session_id
-    })
+        "status": "face_ok",
+        "session_id": session_id,
+        "identity": face_name
+    }), 200
+
+# ---------------- STEP 2: VERIFY VOICE (static pass for demo) ----------------
+@app.route("/verify-voice", methods=["POST"])
+def verify_voice():
+    data = request.get_json(force=True, silent=True) or {}
+    sid = data.get("session_id")
+    voice_b64 = data.get("voice_audio")
+
+    if not sid:
+        return jsonify({"status": "error", "reason": "Missing session_id"}), 400
+
+    if sid not in SESSION_STORE:
+        return jsonify({"status": "voice_ok"}), 200  # session expired, just let it pass
+
+    session = SESSION_STORE[sid]
+
+    if session["status"] != "waiting_voice":
+        return jsonify({"status": "voice_ok"}), 200  # already advanced, that's fine
+
+    # Static pass — voice always succeeds for demo
+    SESSION_STORE[sid]["status"] = "waiting_fp"
+
+    return jsonify({"status": "voice_ok"}), 200
 
 # ---------------- ACTIVE SESSION FOR ESP32 ----------------
 @app.route("/active-session")
@@ -87,7 +105,17 @@ def finger_auth():
     if sid not in SESSION_STORE:
         return jsonify({"status": "invalid"}), 400
 
-    identity = FINGERPRINT_DB.get(int(finger_id))
+    if finger_id is None:
+        return jsonify({"status": "error", "reason": "Missing fingerprint_id"}), 400
+
+    try:
+        identity = FINGERPRINT_DB.get(int(finger_id))
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "reason": "Invalid fingerprint_id"}), 400
+
+    if identity is None:
+        SESSION_STORE[sid]["status"] = "denied"
+        return jsonify({"status": "denied"})
 
     if identity == SESSION_STORE[sid]["identity"]:
         SESSION_STORE[sid]["status"] = "granted"

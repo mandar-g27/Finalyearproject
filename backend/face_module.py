@@ -107,10 +107,9 @@ def verify_face_from_image_bytes(
     img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
     if img is None:
-        print("[DEBUG] Image decode failed")
+        logging.warning("Image decode failed")
         return ("Unknown", 0)
 
-    print("[DEBUG] Image shape:", img.shape)
 
     # 🔥 FIX: selfie camera mirror
     img = cv2.flip(img, 1)
@@ -121,13 +120,13 @@ def verify_face_from_image_bytes(
     rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     locations = face_recognition.face_locations(rgb, model="hog")
 
-    print("[DEBUG] Faces found:", len(locations))
+    logging.info(f"Faces found: {len(locations)}")
 
     if not locations:
         return ("Unknown", 0)
 
     encodings = face_recognition.face_encodings(rgb, locations)
-    print("[DEBUG] Encodings:", len(encodings))
+    logging.info(f"Encodings found: {len(encodings)}")
 
     for encoding in encodings:
         if METHOD == "svm":
@@ -136,8 +135,7 @@ def verify_face_from_image_bytes(
             confidence = probs[idx] * 100
             prediction = CLF.classes_[idx]
 
-            print("[DEBUG] Prediction:", prediction)
-            print("[DEBUG] Confidence:", confidence)
+            logging.info(f"Prediction: {prediction}, Confidence: {confidence:.1f}%")
 
             if confidence >= confidence_threshold:
                 return (prediction, 1)
@@ -149,8 +147,7 @@ def verify_face_from_image_bytes(
             min_dist = float(np.min(distances))
             idx = int(np.argmin(distances))
 
-            print("[DEBUG] Prediction:", KNOWN_NAMES[idx])
-            print("[DEBUG] Distance:", min_dist)
+            logging.info(f"Prediction: {KNOWN_NAMES[idx]}, Distance: {min_dist:.4f}")
 
             if min_dist < distance_threshold:
                 return (KNOWN_NAMES[idx], 1)

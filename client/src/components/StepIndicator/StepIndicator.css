@@ -1,0 +1,89 @@
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 1.5rem 0;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.step-circle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.step-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color var(--transition-normal);
+  white-space: nowrap;
+}
+
+.step-connector {
+  width: 48px;
+  height: 2px;
+  background: var(--border);
+  margin: 0 0.5rem;
+  transition: background var(--transition-normal);
+  flex-shrink: 0;
+}
+
+/* States */
+.step-item.active .step-circle {
+  border-color: var(--accent-primary);
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--accent-primary);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.2);
+}
+
+.step-item.active .step-label {
+  color: var(--accent-primary);
+}
+
+.step-item.completed .step-circle {
+  border-color: var(--accent-secondary);
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--accent-secondary);
+}
+
+.step-item.completed .step-label {
+  color: var(--accent-secondary);
+}
+
+.step-connector.completed {
+  background: var(--accent-secondary);
+}
+
+.step-connector.active {
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+}
+
+@media (max-width: 640px) {
+  .step-label { display: none; }
+  .step-connector { width: 32px; }
+}
