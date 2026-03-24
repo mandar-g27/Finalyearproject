@@ -2,8 +2,9 @@ import { useState, useCallback } from "react";
 import FaceScan from "./facescan";
 import VoiceAuth from "./voicescan";
 import FingerprintWait from "./fingre";
-import AccessResult from "./auth";
-import { verifyFace, verifyVoice } from "../services/api";
+import AccessResult from "./result";          // ✅ was "./auth" (circular)
+import { verifyFace } from "../services/api";
+import LogsModal from "../components/LogsModal";
 
 // ── Verifying overlay ─────────────────────────────────────────────────────────
 function VerifyingScreen({ step, error }) {
@@ -52,7 +53,7 @@ function VerifyingScreen({ step, error }) {
 }
 
 // ── Landing Page ───────────────────────────────────────────────────────────────
-function LandingPage({ onStart }) {
+function LandingPage({ onStart, onCheckLogs }) {
   return (
     <div className="landing-screen">
       <div className="landing-glow" />
@@ -79,6 +80,9 @@ function LandingPage({ onStart }) {
         <button id="start-auth-btn" className="landing-btn" onClick={onStart}>
           Begin Authentication
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <button className="landing-btn logs-btn" onClick={onCheckLogs}>
+          Check Logs
         </button>
         <p className="landing-note">Ensure camera &amp; microphone access is allowed</p>
       </div>
@@ -158,6 +162,18 @@ function LandingPage({ onStart }) {
           color: #fff; transform: translateY(-2px);
           box-shadow: 0 8px 32px rgba(0,212,255,0.12);
         }
+        .logs-btn {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          margin-top: -10px;
+          padding: 10px 24px;
+          font-size: 13px;
+        }
+        .logs-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+          box-shadow: none;
+        }
         .landing-note { font-size: 11px; color: rgba(140,160,180,0.35); }
       `}</style>
     </div>
@@ -166,12 +182,13 @@ function LandingPage({ onStart }) {
 
 // ── Main Orchestrator ──────────────────────────────────────────────────────────
 export default function AuthApp() {
-  // stages: landing | face | verifying-face | voice | verifying-voice | fingerprint | result
+  // stages: landing | face | verifying-face | voice | fingerprint | result
   const [stage, setStage] = useState("landing");
   const [sessionId, setSessionId] = useState(null);
   const [authResult, setAuthResult] = useState(null);  // "granted" | "denied"
   const [failedStep, setFailedStep] = useState(null);  // "face" | "voice" | "fingerprint" | null
   const [verifyError, setVerifyError] = useState(null);
+  const [showLogs, setShowLogs] = useState(false);
 
   // ── Step 1: Face captured → call /verify-face immediately ──
   const handleFaceDone = useCallback(async (imageBase64) => {
@@ -200,14 +217,17 @@ export default function AuthApp() {
     }
   }, []);
 
-  // ── Step 2: Voice captured → simulate success, no backend call ──
-  const handleVoiceDone = useCallback(() => {
-    setStage("verifying-voice");
-    setVerifyError(null);
-    // Simulate a brief "verifying" moment then go straight to fingerprint
-    setTimeout(() => {
-      setStage("fingerprint");
-    }, 1200);
+  // ── Step 2: VoiceAuth calls /verify-voice itself and reports pass/fail here ──
+  const handleVoiceDone = useCallback((_ignored, errorReason) => {
+    if (errorReason) {
+      // Voice failed: wrong passphrase, mic denied, or server error
+      setFailedStep("voice");
+      setAuthResult("denied");
+      setStage("result");
+      return;
+    }
+    // Voice passed → proceed to fingerprint
+    setStage("fingerprint");
   }, []);
 
   // ── Step 3: ESP32 fingerprint result ──
@@ -239,11 +259,10 @@ export default function AuthApp() {
         body { background: #030712; }
       `}</style>
 
-      {stage === "landing"       && <LandingPage onStart={() => setStage("face")} />}
+      {stage === "landing"       && <LandingPage onStart={() => setStage("face")} onCheckLogs={() => setShowLogs(true)} />}
       {stage === "face"          && <FaceScan onComplete={handleFaceDone} />}
       {stage === "verifying-face"&& <VerifyingScreen step="face" error={verifyError} />}
-      {stage === "voice"         && <VoiceAuth onComplete={handleVoiceDone} />}
-      {stage === "verifying-voice"&&<VerifyingScreen step="voice" error={verifyError} />}
+      {stage === "voice"         && <VoiceAuth onComplete={handleVoiceDone} sessionId={sessionId} />}
       {stage === "fingerprint"   && (
         <FingerprintWait sessionId={sessionId} onResult={handleFingerprintResult} />
       )}
@@ -255,6 +274,7 @@ export default function AuthApp() {
           onReset={handleReset}
         />
       )}
+      {showLogs && <LogsModal onClose={() => setShowLogs(false)} />}
     </div>
   );
 }

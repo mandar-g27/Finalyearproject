@@ -1,58 +1,60 @@
-import speech_recognition as sr
-import tempfile
+"""
+voice_module.py — Voice passphrase verification.
+
+The frontend sends a proper WAV file (16-bit PCM, produced by AudioContext).
+We write it to a temp file so speech_recognition can open it (it needs a path,
+not a BytesIO object). pydub / ffmpeg are NOT required.
+"""
 import os
 import logging
+import tempfile
+import speech_recognition as sr
 from voice_config import VOICE_PASSWORDS
 
-def verify_voice_from_audio_bytes(audio_bytes):
+
+def verify_voice_from_audio_bytes(audio_bytes: bytes):
+    """
+    Verify the spoken passphrase in `audio_bytes` (expected WAV from browser).
+
+    Returns:
+        (str, int) — (matched_identity, 1) on success, ("Unknown", 0) on failure.
+    """
     recognizer = sr.Recognizer()
 
+    # Write bytes to a real temp file — sr.AudioFile() requires a file path
+    tmp_path = None
     try:
-        # Save raw audio bytes to a temp file (could be webm, wav, ogg etc.)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".audio") as f:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
             f.write(audio_bytes)
-            raw_path = f.name
+            tmp_path = f.name
 
-        # Convert to WAV using pydub (handles webm, ogg, mp4, wav, etc.)
-        wav_path = raw_path + ".wav"
-        try:
-            from pydub import AudioSegment
-            audio_seg = AudioSegment.from_file(raw_path)
-            audio_seg = audio_seg.set_frame_rate(16000).set_channels(1)
-            audio_seg.export(wav_path, format="wav")
-        except Exception as conv_err:
-            logging.warning(f"pydub conversion failed: {conv_err}. Trying raw as wav.")
-            wav_path = raw_path  # fallback – hope it's already wav
-
-        with sr.AudioFile(wav_path) as source:
+        with sr.AudioFile(tmp_path) as source:
             audio = recognizer.record(source)
 
         spoken_text = recognizer.recognize_google(audio).lower().strip()
-        logging.info(f"Recognized voice text: '{spoken_text}'")
-
-        # Clean up temp files
-        try:
-            os.remove(raw_path)
-            if wav_path != raw_path:
-                os.remove(wav_path)
-        except Exception:
-            pass
-
-        # Check spoken passphrase against all registered users
-        # Use substring match to handle minor STT variations (extra words at start/end)
-        for name, expected in VOICE_PASSWORDS.items():
-            if expected.lower().strip() in spoken_text:
-                return (name, 1)
-
-        logging.info(f"No passphrase match. Heard: '{spoken_text}'")
-        return ("Unknown", 0)
+        logging.info(f"[voice] Recognised: '{spoken_text}'")
 
     except sr.UnknownValueError:
-        logging.warning("Google Speech Recognition could not understand the audio.")
+        logging.warning("[voice] Could not understand audio")
         return ("Unknown", 0)
     except sr.RequestError as e:
-        logging.error(f"Google Speech Recognition service error: {e}")
+        logging.error(f"[voice] Google STT error: {e}")
         return ("Unknown", 0)
-    except Exception:
-        logging.exception("Voice verification failed")
+    except Exception as e:
+        logging.error(f"[voice] Error processing audio: {e}")
         return ("Unknown", 0)
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+
+    # Match against registered passphrases (substring match handles minor STT drift)
+    for name, expected in VOICE_PASSWORDS.items():
+        if expected.lower().strip() in spoken_text:
+            logging.info(f"[voice] Matched: {name}")
+            return (name, 1)
+
+    logging.info(f"[voice] No passphrase match. Heard: '{spoken_text}'")
+    return ("Unknown", 0)

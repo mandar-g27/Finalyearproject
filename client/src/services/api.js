@@ -62,4 +62,16 @@ export async function checkBackendHealth() {
   }
 }
 
+export async function getAccessLogs() {
+  const res = await fetch(`${API_BASE_URL}/access-logs`);
+  if (!res.ok) throw new Error("Failed to fetch logs");
+  return res.json();
+}
+
+export async function clearAccessLogs() {
+  const res = await fetch(`${API_BASE_URL}/access-logs`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to clear logs");
+  return res.json();
+}
+
 export { API_BASE_URL };
