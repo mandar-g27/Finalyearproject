@@ -9,11 +9,17 @@ import logging
 # Load model ONCE (fail fast)
 # -------------------------------
 
+import os
+
+# Get path to face_model.pkl in the same folder as this script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "face_model.pkl")
+
 try:
-    with open("face_model.pkl", "rb") as f:
+    with open(MODEL_PATH, "rb") as f:
         MODEL_DATA = pickle.load(f)
 except Exception as e:
-    raise RuntimeError("Failed to load face_model.pkl") from e
+    raise RuntimeError(f"Failed to load face_model.pkl at {MODEL_PATH}") from e
 
 METHOD = MODEL_DATA.get("method", "svm")
 

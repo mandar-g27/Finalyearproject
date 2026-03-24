@@ -223,11 +223,11 @@ export default function VoiceAuth({ onComplete, sessionId }) {
       setLiveText("");
       startLiveTranscription();
 
-      // Auto-stop after 4 seconds
+      // Auto-stop after 6 seconds
       setTimeout(() => {
         if (recorder.state === "recording") recorder.stop();
         try { speechRecRef.current?.stop(); } catch { /* ignore */ }
-      }, 4000);
+      }, 6000);
     } catch (err) {
       const msg =
         err.name === "NotAllowedError"

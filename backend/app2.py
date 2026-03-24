@@ -8,6 +8,11 @@ from voice_module import verify_voice_from_audio_bytes
 from face_module import verify_face_from_image_bytes
 from FINGERPRINT_DB import FINGERPRINT_DB
 
+import logging
+
+# Configure logging to see info messages in the console
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 app = Flask(__name__)
 CORS(app)
 

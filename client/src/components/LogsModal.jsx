@@ -32,10 +32,9 @@ export default function LogsModal({ onClose }) {
     if (isAuthenticated) {
       fetchLogs();
     }
-    // Cleanup on unmount to force login every time modal opens
-    return () => {
-      logout();
-    };
+    // REMOVED logout() from cleanup — previously causing an infinite loop
+    // when isAuthenticated changed. The session will now correctly persist
+    // until the user manually clicks "Logout".
   }, [isAuthenticated, logout]);
 
   const handleLogin = (e) => {
@@ -84,6 +83,7 @@ export default function LogsModal({ onClose }) {
                 required 
               />
               <button type="submit" className="primary-btn">Login</button>
+              <p className="login-hint">Hint: admin / admin123</p>
             </form>
           </div>
         ) : (
@@ -164,6 +164,7 @@ export default function LogsModal({ onClose }) {
           margin-top: 8px; transition: opacity 0.2s;
         }
         .primary-btn:hover { opacity: 0.9; }
+        .login-hint { font-size: 11px; color: #64748b; text-align: center; margin-top: 0; }
         .error-text { color: #f43f5e; font-size: 14px; }
         .logs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .logs-header h2 { margin: 0; color: #00d4ff; }

@@ -22,6 +22,7 @@ def verify_voice_from_audio_bytes(audio_bytes: bytes):
     recognizer = sr.Recognizer()
 
     # Write bytes to a real temp file — sr.AudioFile() requires a file path
+    print(f"DEBUG: Received {len(audio_bytes)} bytes of audio data")
     tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
@@ -31,7 +32,7 @@ def verify_voice_from_audio_bytes(audio_bytes: bytes):
         with sr.AudioFile(tmp_path) as source:
             audio = recognizer.record(source)
 
-        spoken_text = recognizer.recognize_google(audio).lower().strip()
+        spoken_text = recognizer.recognize_google(audio, language="en-IN").lower().strip()
         logging.info(f"[voice] Recognised: '{spoken_text}'")
 
     except sr.UnknownValueError:
@@ -52,9 +53,12 @@ def verify_voice_from_audio_bytes(audio_bytes: bytes):
 
     # Match against registered passphrases (substring match handles minor STT drift)
     for name, expected in VOICE_PASSWORDS.items():
-        if expected.lower().strip() in spoken_text:
-            logging.info(f"[voice] Matched: {name}")
+        exp = expected.lower().strip()
+        # Bi-directional matching: allows for partial recognition or "extra" words
+        if exp in spoken_text or spoken_text in exp:
+            logging.info(f"[voice] Matched: {name} (Heard: '{spoken_text}', Expected: '{exp}')")
             return (name, 1)
 
+    print(f"DEBUG: No passphrase match. Expected one of {list(VOICE_PASSWORDS.values())}. Heard: '{spoken_text}'")
     logging.info(f"[voice] No passphrase match. Heard: '{spoken_text}'")
     return ("Unknown", 0)
