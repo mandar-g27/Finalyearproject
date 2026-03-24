@@ -32,7 +32,11 @@ export default function LogsModal({ onClose }) {
     if (isAuthenticated) {
       fetchLogs();
     }
-  }, [isAuthenticated]);
+    // Cleanup on unmount to force login every time modal opens
+    return () => {
+      logout();
+    };
+  }, [isAuthenticated, logout]);
 
   const handleLogin = (e) => {
     e.preventDefault();
