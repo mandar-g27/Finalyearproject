@@ -1,8 +1,6 @@
-backend/__pycache__/face_module.cpython-311.pyc
+
 access_logs.db
 project_documentation.md
 backend/access_logs.db
 backend/access_logs.db
-
-backend/__pycache__/voice_module.cpython-311.pyc
-backend/__pycache__/face_module.cpython-311.pyc
+backend/__pycache__/
