@@ -58,6 +58,15 @@ def cleanup_sessions():
 
 threading.Thread(target=cleanup_sessions, daemon=True).start()
 
+# ---------------- HEALTH CHECK ----------------
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "service": "backend",
+        "timestamp": time.time()
+    }), 200
+
 # ---------------- STEP 1: VERIFY FACE ----------------
 @app.route("/verify-face", methods=["POST"])
 def verify_face():
@@ -112,6 +121,16 @@ def verify_voice():
     if not voice_b64:
         return jsonify({"status": "error", "reason": "No voice audio provided"}), 400
 
+    # Extract additional voice text if provided
+    voice_text_b64 = data.get("voice_text")
+    voice_text = None
+    if voice_text_b64:
+        try:
+            voice_text = base64.b64decode(voice_text_b64).decode("utf-8")
+            logging.info(f"[voice] Received recognized text from frontend: '{voice_text}'")
+        except Exception as e:
+            logging.warning(f"[voice] Failed to decode voice_text base64: {e}")
+
     # Strip data-URI prefix if present (e.g. "data:audio/webm;base64,...")
     if "," in voice_b64:
         voice_b64 = voice_b64.split(",")[1]
@@ -122,7 +141,7 @@ def verify_voice():
         return jsonify({"status": "error", "reason": "Invalid base64 audio"}), 400
 
     # Real voice verification
-    voice_name, voice_ok = verify_voice_from_audio_bytes(voice_bytes)
+    voice_name, voice_ok = verify_voice_from_audio_bytes(voice_bytes, voice_text)
 
     if not voice_ok:
         log_access(session.get("identity", "Unknown"), "Voice Failed")

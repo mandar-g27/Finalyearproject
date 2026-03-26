@@ -24,13 +24,18 @@ export async function verifyFace(faceBase64) {
  * Step 2: Verify voice passphrase for the given session.
  * @param {string} sessionId - Session ID returned from verifyFace
  * @param {string} audioBase64 - Raw base64 voice audio (no data-URL prefix)
+ * @param {string} voiceTextBase64 - Raw base64 voice text (from Web Speech API)
  * @returns {Promise<{status: "voice_ok"|"voice_failed"}>}
  */
-export async function verifyVoice(sessionId, audioBase64) {
+export async function verifyVoice(sessionId, audioBase64, voiceTextBase64) {
   const res = await fetch(`${API_BASE_URL}/verify-voice`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ session_id: sessionId, voice_audio: audioBase64 }),
+    body: JSON.stringify({
+      session_id: sessionId,
+      voice_audio: audioBase64,
+      voice_text: voiceTextBase64,
+    }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.reason || "Voice verification request failed");

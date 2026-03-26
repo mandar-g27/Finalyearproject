@@ -123,7 +123,7 @@ export default function VoiceAuth({ onComplete, sessionId }) {
         if (e.results[i].isFinal) final_ += t;
         else interim += t;
       }
-      setLiveText((final_ || interim).trim());
+      setLiveText((final_ || interim).trim().toLowerCase());
     };
     rec.onerror = () => {}; // silent
     try { rec.start(); speechRecRef.current = rec; } catch { /* already started */ }
@@ -153,7 +153,8 @@ export default function VoiceAuth({ onComplete, sessionId }) {
     }
 
     try {
-      const data = await verifyVoice(sessionId, audioBase64);
+      const voiceTextBase64 = btoa(liveText);
+      const data = await verifyVoice(sessionId, audioBase64, voiceTextBase64);
 
       if (data.status === "voice_ok") {
         setPhase("done");
