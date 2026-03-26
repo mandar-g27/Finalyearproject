@@ -65,10 +65,13 @@ export default function FingerprintWait({ sessionId, onResult }) {
     };
   }, [sessionId, handleResult]);
 
-  // Client-side timeout guard
+  // Client-side timeout guard:
+  // If no successful fingerprint arrives within the timer window,
+  // treat it as fingerprint failure and move to denied result.
   useEffect(() => {
-    if (elapsed >= SESSION_TIMEOUT + 5) {
-      handleResult("expired");
+    if (elapsed >= SESSION_TIMEOUT) {
+      speak("Fingerprint verification failed. Time limit exceeded.");
+      handleResult("denied");
     }
   }, [elapsed, handleResult]);
 

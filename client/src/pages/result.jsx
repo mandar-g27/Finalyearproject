@@ -25,8 +25,8 @@ function getDeniedReason(failedStep) {
       };
     case "fingerprint":
       return {
-        desc: "Fingerprint rejected — the scanned fingerprint does not match the verified identity.",
-        speech: "Access denied. Fingerprint rejected. Identity mismatch on the sensor.",
+        desc: "Fingerprint verification failed — fingerprint mismatch or no valid fingerprint was recognized before timeout.",
+        speech: "Access denied. Fingerprint verification failed.",
       };
     default:
       return {
